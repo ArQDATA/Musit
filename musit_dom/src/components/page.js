@@ -1,16 +1,24 @@
 import React,{Component} from 'react'
 import { Card, WhiteSpace,List,SegmentedControl,Accordion} from 'antd-mobile';
 import {Icon } from 'antd';
+import {Playlist,Cplaylist} from './ajax/index'
 import Comments from './comment'
+import {HashRouter as Router,Link} from 'react-router-dom'
 import AllComments from './AllComments'
 const Item = List.Item
 const Brief  =Item.Brief
-
+var arrays = []
 class Page extends Component{
     state = {
         likes: 0,
         dislikes: 0,
         action: null,
+        id:'',
+        ListData:[],
+        Song:[],
+        tags:[],
+        item:[],
+        comments:[]
       };
     
       like = () => {
@@ -28,88 +36,159 @@ class Page extends Component{
           action: 'disliked',
         });
       };
+      componentDidMount(){
+        const id = this.props.match.params.id
+        this.setState({
+            id:id.slice(1)
+        })
+        Playlist(id.slice(1)).then(data=>{
+          // console.log(data)
+         
+          const playlist = data.playlist
+          const playCount = playlist.playCount
+          const coverImgUrl = playlist.coverImgUrl
+          const backgroundCoverUrl = playlist.backgroundCoverUrl //背景图
+          const name =playlist.name //[欧美私人订制] 最懂你的欧美日推
+          const updateFrequency = playlist.updateFrequency //"每日更新"
+          const description = playlist.description //"收藏属于你的个性化欧美歌单 ↵每天和喜欢的欧美音乐不期而遇"
+          const tags = playlist.tags
+          const avatarUrl = playlist.creator.avatarUrl
+          const nickname = playlist.creator.nickname
+          const tracks = playlist.tracks
+          this.setState({
+            ListData:[{
+              name,
+              coverImgUrl,
+              backgroundCoverUrl,
+              nickname,
+              avatarUrl,
+              description,
+              updateFrequency,
+              playCount
+            }],
+          })
+           // eslint-disable-next-line array-callback-return
+          tracks.map(item=>{
+            var  alias = ""
+            arrays.push(item.id)
+            const SongName = item.name
+            const al = item.al.name
+            const ar = item.ar.map(array=>{
+              return array.name
+            }).join('/')
+            if(item.alia.length!==0){
+              alias = `(${item.alia[0]})`
+            }
+            this.setState({
+              Song:[...this.state.Song,{SongName:SongName+alias,ar:ar + '-' +al}],
+              tags:[tags]
+            })
+  
+            alias = " "
+          })
+        })
+        Cplaylist(id.slice(1)).then(item=>{
+          const hotComments = item.hotComments
+          const comments = item.comments
+          // eslint-disable-next-line array-callback-return
+         hotComments.map(item=>{
+             const user = item.user
+             const content = item.content
+             const script = user.avatarUrl
+             const name = user.nickname
+             this.setState({
+                 item:[...this.state.item,{content,script,name}]
+             })
+         })
+         // eslint-disable-next-line array-callback-return
+         comments.map(item=>{
+          const user = item.user
+          const content = item.content
+          const script = user.avatarUrl
+          const name = user.nickname
+          this.setState({
+              comments:[...this.state.comments,{content,script,name}]
+          })
+       })
+    })
+      }
     render(){
         return(
             <div>
-                <section style={{width:'100%',height:180}} className="section">
+            {this.state.ListData.map((item,index)=>{
+              var img = item.backgroundCoverUrl
+              if(!item.backgroundCoverUrl){
+                 img = item.coverImgUrl
+              }
+             
+              return(
+                <div key={index}>
+                <section style={{width:'100%',height:180,backgroundImage: 'url('+img+')'}} className="section">
                 </section> 
                 <div className="center">
-                        <img src="https://p2.music.126.net/u6hYMOddQcHdIwrHU2uwFg==/109951164194073386.webp?imageView&thumbnail=378x0&quality=75&tostatic=0&type=webp" alt="" style={{width:120,height:120}}/>
+                        <img src={item.coverImgUrl} alt="" style={{width:120,height:120}}/>
                         <span className="lsthd_icon">歌单</span>
-                        <span className="lsthd_num"><Icon type="customer-service"/>117.8万</span>
+                        <span className="lsthd_num"><Icon type="customer-service"/>{`${(item.playCount)/10000}万`}</span>
                         <div className="right">
-                            <span>记得变优秀 让自己能担得起任何人的喜欢</span>
+                            <span>{item.name}</span>
                             <div className="list">
-                                <img src="http://p1.music.126.net/pfJqtzBjaQyl58AlRb9-Ow==/109951164184069956.webp?imageView&thumbnail=90x0&quality=75&tostatic=0&type=webp" alt="" style={{height:30,width:30,borderRadius:'100%'}}/>
-                                <p>空气很颓废</p>
+                                <img src={item.avatarUrl} alt="" style={{height:30,width:30,borderRadius:'100%'}}/>
+                                <p>{item.nickname}</p>
                             </div>
                         </div>
                     </div>
+              </div>
+              )
+            })}
+
                     <section>
                     <WhiteSpace size="lg" />
-                    <Card style={{border:0}} full>
+                    {this.state.ListData.map((item,index)=>{
+                    return(
+                    <Card style={{border:0}} full key={index}>
                     <Card.Header
                         title="标签:"
-
                         extra={
-                        <SegmentedControl values={['欧美','流行']} />
+                        <SegmentedControl values={this.state.tags[0]} />
                         }
                     />
                     <Card.Body>
-                        <div>简介：我们还会遇见很多人，付出很多真心，然后错过很多感情，才能慢慢长大。我们能在彼此的爱里长大，那才是幸福的。...</div>
+                        <pre>简介{item.name}</pre>
                         <WhiteSpace/>
                         <Accordion style={{border:0}}>
                              <Accordion.Panel  className="pad" style={{width:360}}>
-                                 <WhiteSpace/>
-                                 <p >舍不得的最终都会变成舍得，放不下的最终都会慢慢放下。经历它始终是一种经历，我们不能回到过去改变它，让它从未发生，我们也不需要否定原来的那个自己。</p>
-                                 <WhiteSpace/>
-                                 <p>我们只要往前走，那些被丢下的经历，它会让你沉淀，未来再回头看看，就会发现其实没有爱错人，也没有白白爱过那个人。</p>
-                                 <WhiteSpace/>
-                                 <p>是那个人，让原本的我们变得更好。你们之所以会在一起，是命运恰巧要你们遇见，最后结果真的不那么重要，不对的人永远也走不到一起。下一站到了，你们还是要分道扬镳，消失在人海里。</p>
-                                 <WhiteSpace/>
-                                 <p>有些东西不是不好吃，只是它不符合你的口味；有些文字不是不好看，只是没体会到它的深意；有些人不是不好，只是你们没办法走到最后。</p>
-                                 <WhiteSpace/>
-                                 <p>既然我们是败将，给不了他们想要的，那就好好分开吧。</p>
-                                 <WhiteSpace/>
-                                 <p>然后，你要收拾一下你的心情。然后，你就要重新出发了，为了接下来能遇到的人，更为了你自己。</p>
-                             </Accordion.Panel>
+                                   <span>
+                                    <WhiteSpace/>
+                                    <pre>{item.description}</pre>
+                                     </span>
+                                 </Accordion.Panel>
                     </Accordion>
                     </Card.Body>
                     <Card.Footer />
-                    </Card>
+                    </Card> 
+                  )
+                    })}
+
                     <h3 className="u-smtitle">歌曲列表</h3>
                     <WhiteSpace/>
-                    <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                            这么久没见 <Brief style={{fontSize:12}}>
-                            薛之谦 - 尘
-                            </Brief>
-                    </Item>
-                    <List>
-                    <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                            这么久没见 <Brief style={{fontSize:12}}>
-                            薛之谦 - 尘
-                            </Brief>
-                    </Item>
-                    <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                            这么久没见 <Brief style={{fontSize:12}}>
-                            薛之谦 - 尘
-                            </Brief>
-                    </Item>
-                    <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                            这么久没见 <Brief style={{fontSize:12}}>
-                            薛之谦 - 尘
-                            </Brief>
-                    </Item>
-                    <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                            这么久没见 <Brief style={{fontSize:12}}>
-                            薛之谦 - 尘
-                            </Brief>
-                    </Item>
-                    </List> 
+                    {this.state.Song.map((item,index)=>{
+                      return(
+                        <Router key={index}>
+                        <Link to={`/Song/:${arrays[index]}`}>
+                        <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:15}} />} multipleLine onClick={() => {}} align={'bottom'}>
+                        
+                                {item.SongName} <Brief style={{fontSize:12}}>
+                                {item.ar}
+                                </Brief>
+                        </Item>
+                        </Link>
+                      </Router> 
+                      )
+                    })}
                     <h3 className="u-smtitle">精彩评论</h3>
-                         <Comments/>  
+                    <Comments item={this.state.item}/>
                     <h3 className="u-smtitle">所有评论</h3>
-                         <AllComments/>      
+                    <AllComments item={this.state.comments}/>
                     </section>
             </div>
         )

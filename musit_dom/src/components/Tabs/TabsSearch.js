@@ -3,14 +3,49 @@ import React,{Component} from 'react'
 import { SearchBar, WhiteSpace,List } from 'antd-mobile';
 import {HashRouter as Router,Link} from 'react-router-dom'
 import {Icon} from 'antd'
+import {Search,HotList,Album} from '../ajax/index'
 const Item = List.Item
 const Brief = Item.Brief
+var arrays = []
 class TabsSearch extends Component {
   constructor(props){
     super(props)
-    this.state = {dis:false,list:[],values:'' }
+    this.state = {dis:false,list:[],song:[],Hotlist:[],values:'',albumId:[]}
   }
   none = (e)=>{
+    Album('10',e).then(data=>{
+      // console.log(data)
+      // eslint-disable-next-line array-callback-return
+      data.result.albums.map(item=>{
+        const picUrl = item.artist.picUrl
+        const name = item.name
+        const artistname = item.artist.name
+         this.setState({
+           albumId:[...this.state.albumId,{
+             img:picUrl,
+             artist:item.artist.id,
+             album:item.id,
+             name,
+             artistname
+           }],
+         })
+      })
+    })
+
+
+
+
+
+
+
+
+
+
+    this.setState({
+      song:[],
+      values:e
+    })
+    // console.log(e)
     if(this.state.list.length!==0){
       for(var i =0; i<this.state.list.length;i++){
          if(e!==this.state.list[i]){
@@ -26,26 +61,52 @@ class TabsSearch extends Component {
     }
     this.autoFocusInst.focus();
     (!e)?console.log(1):this.setState({dis:true})
+    Search(e).then(data=>{
+        arrays = []
+        var  alias = ""
+        
+        const result = data.result
+        // eslint-disable-next-line array-callback-return
+        result.songs.map((item,index)=>{
+          arrays.push(item.id)
+          const array = item.artists.map((value,index)=>{
+         
+          return value.name
+          }).join('/')
+          if(item.alias.length!==0){
+            alias =  item.alias[0]
+          }
+          this.setState({
+            song:[...this.state.song,{name:item.name+alias,artists:array+'-'+item.album.name}]
+          })
+        alias = ""
+        })
+        
+      }) 
   }
   block = (e)=>{
     this.setState({
-      dis:false
+      dis:false,
+      values:''
     })
   }
   clears = (index)=>{
     console.log(index)
   }
-  // componentDidMount() {
-  //   this.autoFocusInst.focus();
-  // }
+
   remove = (i)=>{
     this.state.list.splice(i,1)
     this.setState({
       list:this.state.list
     })
   }
-  values = (item)=>{
-
+  componentDidMount(){
+    HotList().then(data=>{
+       this.setState({
+        Hotlist:data.result.hots
+       })
+     
+    })
   }
   render() {
     return (<div>
@@ -56,7 +117,8 @@ class TabsSearch extends Component {
       onSubmit={this.none}
       ref={ref => this.autoFocusInst = ref}
       onClear={this.block}
-      defaultValue = {this.state.values}
+      value = {this.state.values}
+      onChange={(e)=>{this.setState({values:e})}}
       style={{backgroundColor:'white'}}
       />
     <WhiteSpace />
@@ -66,35 +128,19 @@ class TabsSearch extends Component {
        <WhiteSpace />
   <div className="m-hotlist">
      <ul className="listsss">
-        <li className="item f-bd f-bd-full">
-        <a className="link" href="http://www.alipay.com">不得不爱Lambert</a>
+     {this.state.Hotlist.map((type,index)=>{
+        return(
+          <li className="item f-bd f-bd-full" key={index} onClick={()=>{
+            this.none(this.state.Hotlist[index].first)
+            this.setState({
+              values:this.state.Hotlist[index].first
+            })
+            }}>
+           <p className="link">{type.first}</p>
         </li>
-        <li className="item f-bd f-bd-full">
-            <a className="link" href="http://www.alipay.com">My O My</a>
-      </li>
-        <li className="item f-bd f-bd-full">
-        <a className="link" href="http://www.alipay.com">溢</a>
-     </li>
-        <li className="item f-bd f-bd-full">
-        <a className="link" href="http://www.alipay.com">王晨艺夜空彩虹</a></li>
-        <li className="item f-bd f-bd-full">
-        <a className="link" href="http://www.alipay.com">朱星杰中国话</a>
-        </li>
-        <li className="item f-bd f-bd-full">
-          <a className="link" href="http://www.alipay.com" >霉霉新专辑</a>
-        </li>
-        <li className="item f-bd f-bd-full">
-        <a className="link" href="http://www.alipay.com" >隔壁老樊这一生关于你的风景</a>
-        </li>
-        <li className="item f-bd f-bd-full">
-          <a className="link" href="http://www.alipay.com" >尚士达迷人的危险</a>
-        </li>
-        <li className="item f-bd f-bd-full">
-          <a className="link" href="http://www.alipay.com" >我在云村有房</a>
-        </li>
-        <li className="item f-bd f-bd-full">
-      <a className="link" href="http://www.alipay.com" >刘宪华 OPEN TO MORE</a>
-    </li>
+        )
+     })}
+
     </ul>
    </div>
    <WhiteSpace />
@@ -105,6 +151,7 @@ class TabsSearch extends Component {
         return(
           <div  key={index} style={{marginLeft:15,marginTop:15}} onClick={()=>{ 
              this.autoFocusInst.focus(); 
+             this.none(number)
              this.setState({
               values:number
             })}}>
@@ -125,62 +172,36 @@ class TabsSearch extends Component {
 </div>
       <div  style={this.state.dis?{display:'block'}:{display:'none'}}>
       <p style={{fontSize:12,color:' #666',marginLeft:15}}>最佳匹配</p>
-            <Item arrow={'empty'}  multipleLine onClick={() => {}} align={'bottom'} activeStyle={{height:50}}>
-                        <img src="http://p4.music.126.net/aryxbULAHjqP5MPgUdg9gA==/109951164292787462.webp?imageView&thumbnail=150x0&quality=75&tostatic=0&type=webp" alt="" style={{width:50,height:50}}/>
+      {this.state.albumId.map((item,index)=>{
+          return(
+            <Router key={index}>
+              <Link to={`/result/:${item.album}`}>
+              <Item arrow={'empty'}  multipleLine onClick={() => {}} align={'bottom'} activeStyle={{height:50}}>
+                        <img src={item.img} alt="" style={{width:50,height:50}}/>
                         <Brief style={{fontSize:17,color:'black',marginLeft:60,marginTop:-51}}>
-                         专辑:
+                         专辑:{item.name}
                         </Brief>
                         <Brief style={{fontSize:12,margin:'0 auto',marginLeft:60}}>
-                        薛之谦 - 尘
+                         {item.artistname}
                         </Brief>
-          </Item>
-          <List> 
-         <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-         </List>   
+             </Item>
+              </Link>
+            </Router>
+          )
+      })}
+          {this.state.song.map((item,index)=>{
+                 return(
+                  <Router key={index}>
+                  <Link to={`/Song/:${arrays[index]}`}>
+                  <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:15}} />} multipleLine onClick={() => {}} align={'bottom'} >
+                         <span style={{color:'#507daf'}}> {item.name}</span> <Brief style={{fontSize:12}}>
+                          {item.artists}
+                          </Brief>
+                  </Item>
+                  </Link>
+                </Router> 
+                 )
+          })}  
       </div>
     </div>);
   }

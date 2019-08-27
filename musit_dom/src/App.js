@@ -3,15 +3,17 @@ import Recommend from './components/recommend'
 import {HashRouter as Router,Route} from 'react-router-dom'
 import page from './components/page'
 import Song from './components/Song' 
-// import Result from './components/Result'
+import result from './components/Result'
 
-class Home extends Component{
+
+class Home extends Component{ 
    render(){
      return(
       <Router>
       <Route  exact path="/" component={Recommend}/>
-      <Route  path="/page" component={page}/>
-      <Route  path="/Song" component={Song}/>
+      <Route  path="/page/:id" component={page}/>
+      <Route  path="/Song/:id" component={Song}/>
+      <Route  path="/result/:id" component={result}/>
     </Router>
      )
    }

@@ -3,45 +3,65 @@ import React,{Component} from 'react'
 import {WingBlank,Grid,List} from 'antd-mobile'
 import {Icon} from 'antd'
 import {HashRouter as Router,Link} from 'react-router-dom'
+import {Recommend,NewSong} from '../ajax/index'
 const Item = List.Item
 const Brief = Item.Brief
-const img = [
-  'http://p1.music.126.net/PjmeANWOl67Q3HnG3vEFfw==/109951164221437658.webp?imageView&thumbnail=369x0&quality=75&tostatic=0&type=webp',
-  'http://p1.music.126.net/XMbZ9z01u8tTE06SKQs74w==/109951164232719608.webp?imageView&thumbnail=369x0&quality=75&tostatic=0&type=webp',
-  'http://p1.music.126.net/iFbhkzHhG7nzE6waxT1izw==/109951163172804084.webp?imageView&thumbnail=369x0&quality=75&tostatic=0&type=webp',
-  'http://p2.music.126.net/-G31v_fyy50ZMpyDEZ0j5w==/109951164265917857.webp?imageView&thumbnail=369x0&quality=75&tostatic=0&type=webp',
-  'http://p2.music.126.net/MlRtYwuFK6_hkOfzGLJDbA==/7953867115756465.webp?imageView&thumbnail=369x0&quality=75&tostatic=0&type=webp',
-  'http://p2.music.126.net/Xh23ejjTftcg-IrjO9O8uw==/109951164190589369.webp?imageView&thumbnail=369x0&quality=75&tostatic=0&type=webp',
-]
-const data = Array.from(new Array(6)).map((_val, i) => ({
-  icon: img[i],
-  text:[
-  '[全球百大DJ] 2018百大DJ作品精选',
-  '单恋之人，连结束都是一厢情愿',
-  '欧布奥特曼歌曲集~ULTRAMAN ORB',
-  '耳朵存在的理由，200首必听欧美歌曲',
-  '有些情愫，留在现场【欧美】',
-  '「民谣歌者」一切高贵的情感都羞于表白'
-]
-}));
+var arrays = []
 class TabsRecommend extends Component{
     constructor(props){
       super(props)
-      this.state = {icon:'',Text:''}
-    }
-     grid = (el,index) =>{
-       this.setState({
-         icon: el.icon,
-         Text: el.text[index]
-       })
+      this.state = {
+         Img:[],
+         Text:[],
+         song:[],
+         playCount:[],
+         ListId:[] 
      }
+    }
+
 
      componentWillMount(){
-      //  newSong().then(data=>{
-      //    console.log(data)
-      //  })
+      Recommend().then(data=>{
+        const result = data.result
+         // eslint-disable-next-line array-callback-return
+         result.map(item=>{
+          this.setState({
+            Img:[...this.state.Img, item.picUrl],
+            Text:[...this.state.Text, item.name],
+            playCount:[...this.state.playCount,item.playCount],
+            ListId:[...this.state.ListId,item.id] 
+          })
+         })
+          
+      })
+      NewSong().then(data=>{
+        var  alias = ""
+        const result = data.result
+       
+        // eslint-disable-next-line array-callback-return
+        result.map((item,index)=>{
+          arrays.push(item.id) 
+            
+           // eslint-disable-next-line array-callback-return
+         const array = item.song.artists.map((value,index)=>{
+                return value.name
+          }).join('/')
+          if(item.song.alias.length!==0){
+            alias =  item.song.alias[0]
+          }
+          this.setState({
+            song:[...this.state.song,{name:item.song.name+alias,artists:array+'-'+item.song.album.name}]
+          })
+          alias = ""
+        })
+        
+      })
      }
       render(){
+        const data = Array.from(new Array(6)).map((_val, i) => ({
+          icon:this.state.Img[i],
+          text:this.state.Text
+        }));
         return(
           <div>
              <span className="recommend" style={{lineHeight:38}}>
@@ -52,14 +72,13 @@ class TabsRecommend extends Component{
               columnNum={3}
               hasLine={false}
               itemStyle={{height:166}}
-              onClick = {this.grid.bind(this)}
               renderItem={(dataItem,index) => (
                 <Router>
-                  <Link to='/page'>  
+                  <Link to={`/page/:${this.state.ListId[index]}`}>  
                 <div style={{marginTop:-10}}>
                   <img src={dataItem.icon} style={{ width: '120px', height: '120px' }} alt="" />
                   <div style={{ color: '#000000', fontSize: '11px', marginTop: '2px' }}>
-                     <span className="recom"><Icon type="customer-service"/>117.8万</span>
+                     <span className="recom"><Icon type="customer-service"/>{Math.floor(this.state.playCount[index]/10000) + '万'}</span>
                     <span style={{textoverflow:'ellipsis'}}>{dataItem.text[index]}</span>
                   </div>
                 </div>
@@ -71,82 +90,21 @@ class TabsRecommend extends Component{
              <span className="recommendI">|</span>
              <WingBlank size="sm"/>
               最新音乐</span>   
-              <Router>
-              <Link to="/Song">
-              <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                      这么久没见 <Brief style={{fontSize:12}}>
-                      薛之谦 - 尘
-                      </Brief>
-            </Item>
-              </Link>
-            </Router>
-              <List style={{borderTop:0}}>
-              <Router>
-              <Link to="/Song">
-              <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                      这么久没见 <Brief style={{fontSize:12}}>
-                      薛之谦 - 尘
-                      </Brief>
-            </Item>
-              </Link>
-           </Router>
-           <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-        <Router>
-          <Link to="/Song">
-          <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:23}} />} multipleLine onClick={() => {}} align={'bottom'}>
-                  这么久没见 <Brief style={{fontSize:12}}>
-                  薛之谦 - 尘
-                  </Brief>
-         </Item>
-          </Link>
-        </Router>
-              </List>
-              
-               
+              {this.state.song.map((item,index)=>{
+                 return(
+                  <Router key={index}>
+                  <Link to={`/Song/:${arrays[index]}`}>
+                  <Item arrow={'empty'} extra={<Icon type="play-circle" style={{fontSize:15}} />} multipleLine onClick={() => {}} align={'bottom'}>
+                  
+                          {item.name} <Brief style={{fontSize:12}}>
+                          {item.artists}
+                          </Brief>
+                  </Item>
+                  </Link>
+                </Router> 
+                 )
+              })}
+  
           </div>
         )
       }
